@@ -1,9 +1,10 @@
 import React, { useRef } from 'react';
-import { motion, useScroll, useTransform } from 'framer-motion';
+import { motion, useScroll, useTransform, useReducedMotion } from 'framer-motion';
 import { Layers, Ruler, Building2, CheckCircle2 } from 'lucide-react';
 
 export const BlueprintMorph: React.FC = () => {
   const containerRef = useRef<HTMLDivElement>(null);
+  const prefersReducedMotion = useReducedMotion() ?? false;
 
   const { scrollYProgress } = useScroll({
     target: containerRef,
@@ -19,7 +20,7 @@ export const BlueprintMorph: React.FC = () => {
   const renderScale = useTransform(scrollYProgress, [0.7, 1], [1.08, 1]);
 
   return (
-    <section id="vision" ref={containerRef} className="relative h-[300vh] bg-dark-950">
+    <section id="blueprint" ref={containerRef} className="scroll-sequence blueprint-scroll-section relative bg-dark-950">
       <div className="sticky top-0 h-screen w-full overflow-hidden flex flex-col justify-between py-12 px-6 md:px-16">
         <div className="relative z-20 max-w-2xl">
           <div className="flex items-center space-x-2 mb-2">
@@ -38,8 +39,10 @@ export const BlueprintMorph: React.FC = () => {
 
         <div className="relative w-full h-[60vh] max-w-5xl mx-auto flex items-center justify-center my-auto">
           <motion.div
-            style={{ opacity: blueprintOpacity }}
-            className="absolute inset-0 flex items-center justify-center p-4"
+            style={{ opacity: prefersReducedMotion ? 0 : blueprintOpacity }}
+            className={`absolute inset-0 flex items-center justify-center p-4 ${
+              prefersReducedMotion ? "hidden" : ""
+            }`}
           >
             <div className="w-full h-full glass-panel-gold rounded-3xl p-6 relative overflow-hidden flex items-center justify-center border border-gold-500/30">
               <div className="absolute inset-0 bg-[radial-gradient(#C6A84B_1px,transparent_1px)] [background-size:24px_24px] opacity-20" />
@@ -74,8 +77,13 @@ export const BlueprintMorph: React.FC = () => {
           </motion.div>
 
           <motion.div
-            style={{ opacity: wireframeOpacity, scale: wireframeScale }}
-            className="absolute inset-0 flex items-center justify-center p-4 pointer-events-none"
+            style={{
+              opacity: prefersReducedMotion ? 0 : wireframeOpacity,
+              scale: prefersReducedMotion ? 1 : wireframeScale,
+            }}
+            className={`absolute inset-0 flex items-center justify-center p-4 pointer-events-none ${
+              prefersReducedMotion ? "hidden" : ""
+            }`}
           >
             <div className="w-full h-full glass-panel rounded-3xl p-6 relative overflow-hidden flex items-center justify-center border border-gold-400/40 shadow-gold-glow">
               <div className="absolute inset-0 bg-gradient-to-tr from-gold-500/10 via-transparent to-gold-500/5" />
@@ -102,13 +110,18 @@ export const BlueprintMorph: React.FC = () => {
           </motion.div>
 
           <motion.div
-            style={{ opacity: renderOpacity, scale: renderScale }}
+            style={{
+              opacity: prefersReducedMotion ? 1 : renderOpacity,
+              scale: prefersReducedMotion ? 1 : renderScale,
+            }}
             className="absolute inset-0 flex items-center justify-center p-4 pointer-events-none"
           >
             <div className="w-full h-full rounded-3xl relative overflow-hidden border border-gold-500/50 shadow-gold-glow-lg">
               <img
                 src="/assets/images/properties/elite-1.webp"
                 alt="Janzem Completed Villa"
+                loading="lazy"
+                decoding="async"
                 className="w-full h-full object-cover"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-dark-950 via-dark-950/20 to-transparent" />

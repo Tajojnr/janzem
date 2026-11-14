@@ -42,30 +42,30 @@ export const JANZEM_DATA = {
   },
 
   heroSequence: {
-    totalFrames: 122,
+    totalFrames: 82,
     desktopPath: "/assets/frames/desktop/frame_%04d.webp",
     mobilePath: "/assets/frames/mobile/frame_%04d.webp",
     annotations: [
       {
-        frameIndex: 10,
+        frameIndex: 7,
         title: "Land Acquisition & Excavation",
         description: "Soil testing & C-of-O verified land breaking in prime sectors.",
         coords: { x: 30, y: 40 },
       },
       {
-        frameIndex: 45,
+        frameIndex: 30,
         title: "Monolithic Structural Core",
         description: "Engineered high-grade concrete & earthquake-resistant framing.",
         coords: { x: 50, y: 45 },
       },
       {
-        frameIndex: 85,
+        frameIndex: 57,
         title: "Glass & Façade Integration",
         description: "Double-glazed UV reflective thermal glass installation.",
         coords: { x: 65, y: 35 },
       },
       {
-        frameIndex: 118,
+        frameIndex: 79,
         title: "Turnkey Smart Palace",
         description: "Fully automated, solar-integrated luxury masterpiece ready for occupation.",
         coords: { x: 75, y: 55 },
@@ -74,13 +74,13 @@ export const JANZEM_DATA = {
   },
 
   walkthroughSequence: {
-    totalFrames: 120,
+    totalFrames: 81,
     desktopPath: "/assets/frames/walkthrough_desktop/frame_%04d.webp",
     mobilePath: "/assets/frames/walkthrough_mobile/frame_%04d.webp",
   },
 
   ideaToRealitySequence: {
-    totalFrames: 153,
+    totalFrames: 103,
     desktopPath: "/assets/frames/idea_desktop/frame_%04d.webp",
     mobilePath: "/assets/frames/idea_mobile/frame_%04d.webp",
   },

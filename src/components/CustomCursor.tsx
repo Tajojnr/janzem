@@ -2,7 +2,8 @@ import React, { useEffect, useState } from "react";
 import { motion, useSpring, AnimatePresence } from "framer-motion";
 
 export const CustomCursor: React.FC = () => {
-  const [isTouchDevice, setIsTouchDevice] = useState(false);
+  const isTouchDevice =
+    window.matchMedia("(pointer: coarse)").matches || "ontouchstart" in window;
   const [cursorText, setCursorText] = useState("");
   const [isHovered, setIsHovered] = useState(false);
   const [isClicking, setIsClicking] = useState(false);
@@ -16,13 +17,7 @@ export const CustomCursor: React.FC = () => {
   const ringY = useSpring(0, { damping: 22, stiffness: 180 });
 
   useEffect(() => {
-    if (
-      window.matchMedia("(pointer: coarse)").matches ||
-      "ontouchstart" in window
-    ) {
-      setIsTouchDevice(true);
-      return;
-    }
+    if (isTouchDevice) return;
 
     const moveCursor = (e: MouseEvent) => {
       dotX.set(e.clientX);
@@ -66,7 +61,7 @@ export const CustomCursor: React.FC = () => {
       window.removeEventListener("mouseup", handleMouseUp);
       window.removeEventListener("mouseover", handleMouseOver);
     };
-  }, [dotX, dotY, ringX, ringY]);
+  }, [dotX, dotY, ringX, ringY, isTouchDevice]);
 
   if (isTouchDevice) return null;
 

@@ -1,3 +1,4 @@
+import { MotionConfig } from "framer-motion";
 import { CustomCursor } from "./components/CustomCursor";
 import { Navbar } from "./components/Navbar";
 import { ScrollVideoEngine } from "./components/ScrollVideoEngine";
@@ -13,57 +14,59 @@ import { Footer } from "./components/Footer";
 
 export function App() {
   return (
-    <div className="min-h-screen bg-[#0A0A0A] text-white selection:bg-[#C6A84B] selection:text-black font-sans antialiased">
-      {/* Custom Physics Gold Cursor */}
-      <CustomCursor />
+    <MotionConfig reducedMotion="user">
+      <div className="min-h-screen bg-[#0A0A0A] text-white selection:bg-[#C6A84B] selection:text-black font-sans antialiased">
+        {/* Custom Physics Gold Cursor */}
+        <CustomCursor />
 
-      {/* Sticky Luxury Glass Navigation */}
-      <Navbar />
+        {/* Sticky Luxury Glass Navigation */}
+        <Navbar />
 
-      <main>
-        {/* Hero Section: 122-Frame Construction Timelapse Scrub */}
-        <section id="vision" className="relative">
-          <ScrollVideoEngine />
-        </section>
+        <main>
+          {/* Hero Section: 82-Frame Construction Timelapse Scrub */}
+          <section id="vision" className="relative">
+            <ScrollVideoEngine />
+          </section>
 
-        {/* Regulatory Compliance & Regulatory Badges */}
-        <TrustBar />
+          {/* Regulatory Compliance & Regulatory Badges */}
+          <TrustBar />
 
-        {/* 3-Stage Blueprint Morph Section */}
-        <BlueprintMorph />
+          {/* 3-Stage Blueprint Morph Section */}
+          <BlueprintMorph />
 
-        {/* Hot Sales Section */}
-        <section id="hot-sales">
-          <HotSales />
-        </section>
+          {/* Hot Sales Section */}
+          <section id="hot-sales">
+            <HotSales />
+          </section>
 
-        {/* Ultra-Luxury Elite Collection Section */}
-        <section id="elite">
-          <EliteCollection />
-        </section>
+          {/* Ultra-Luxury Elite Collection Section */}
+          <section id="elite">
+            <EliteCollection />
+          </section>
 
-        {/* Interior Walkthrough Scroll Engine */}
-        <section id="walkthrough">
-          <VillaWalkthrough />
-        </section>
+          {/* Interior Walkthrough Scroll Engine */}
+          <section id="walkthrough">
+            <VillaWalkthrough />
+          </section>
 
-        {/* Land Holdings & City Filter Section */}
-        <section id="land">
-          <LandLocations />
-        </section>
+          {/* Land Holdings & City Filter Section */}
+          <section id="land">
+            <LandLocations />
+          </section>
 
-        {/* Regulatory FAQ Accordion Section */}
-        <section id="faq">
-          <FAQSection />
-        </section>
+          {/* Regulatory FAQ Accordion Section */}
+          <section id="faq">
+            <FAQSection />
+          </section>
 
-        {/* Conversion CTA Section */}
-        <CTA />
-      </main>
+          {/* Conversion CTA Section */}
+          <CTA />
+        </main>
 
-      {/* Footer */}
-      <Footer />
-    </div>
+        {/* Footer */}
+        <Footer />
+      </div>
+    </MotionConfig>
   );
 }
 

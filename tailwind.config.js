@@ -33,7 +33,6 @@ export default {
       fontFamily: {
         serif: ['"Playfair Display"', 'Georgia', 'serif'],
         sans: ['"Outfit"', 'system-ui', 'sans-serif'],
-        accent: ['"Cormorant Garamond"', 'serif'],
       },
       backgroundImage: {
         'gold-gradient': 'linear-gradient(135deg, #E2CC85 0%, #C6A84B 50%, #8B7632 100%)',

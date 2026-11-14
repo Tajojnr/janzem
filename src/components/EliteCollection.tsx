@@ -1,12 +1,14 @@
 import React, { useState } from "react";
 import { motion } from "framer-motion";
 import { JANZEM_DATA, type Property } from "../data/landingData";
-import { Crown, Bed, Bath, Maximize2, ArrowUpRight } from "lucide-react";
+import { Crown, Bed, Bath, Maximize2, ArrowUpRight, Play, X } from "lucide-react";
 
 export const EliteCollection: React.FC = () => {
-  const [hoveredProperty, setHoveredProperty] = useState<string | null>(null);
+  const [activePreviewId, setActivePreviewId] = useState<string | null>(null);
+  const isTouchDevice = window.matchMedia("(hover: none), (pointer: coarse)").matches;
   const featured = JANZEM_DATA.eliteCollection[0];
   const secondary = JANZEM_DATA.eliteCollection.slice(1);
+  const isFeaturedPreviewing = activePreviewId === featured?.id;
 
   return (
     <section className="relative bg-[#050505] py-24 px-6 md:px-16 overflow-hidden">
@@ -32,20 +34,25 @@ export const EliteCollection: React.FC = () => {
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: "-100px" }}
-            onMouseEnter={() => setHoveredProperty(featured.id)}
-            onMouseLeave={() => setHoveredProperty(null)}
+            onMouseEnter={() => {
+              if (!isTouchDevice) setActivePreviewId(featured.id);
+            }}
+            onMouseLeave={() => {
+              if (!isTouchDevice) setActivePreviewId(null);
+            }}
             className="group relative mb-12 rounded-3xl border border-[#C6A84B]/30 bg-neutral-900/60 overflow-hidden shadow-2xl backdrop-blur-xl will-change-transform"
           >
             <div className="grid grid-cols-1 lg:grid-cols-12">
               <div className="relative lg:col-span-7 h-96 lg:h-auto overflow-hidden bg-neutral-950">
-                {hoveredProperty === featured.id && featured.videoUrl ? (
+                {isFeaturedPreviewing && featured.videoUrl ? (
                   <video
                     src={featured.videoUrl}
                     autoPlay
                     loop
                     muted
                     playsInline
-                    preload="auto"
+                    controls={isTouchDevice}
+                    preload="none"
                     className="h-full w-full object-cover scale-105 transition-transform duration-500 will-change-transform"
                   />
                 ) : (
@@ -61,6 +68,26 @@ export const EliteCollection: React.FC = () => {
                   <div className="absolute top-6 left-6 rounded-full bg-[#C6A84B] px-4 py-1.5 text-xs font-bold text-black uppercase tracking-wider shadow-lg">
                     {featured.badge}
                   </div>
+                )}
+                {featured.videoUrl && (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setActivePreviewId(isFeaturedPreviewing ? null : featured.id)
+                    }
+                    aria-pressed={isFeaturedPreviewing}
+                    aria-label={`${isFeaturedPreviewing ? "Stop" : "Play"} video preview for ${featured.title}`}
+                    className={`absolute right-4 top-4 z-20 inline-flex min-h-11 items-center gap-2 rounded-full border border-white/25 bg-black/70 px-4 text-xs font-semibold text-white backdrop-blur-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#C6A84B] ${
+                      isTouchDevice ? "" : "md:opacity-0 md:focus-visible:opacity-100"
+                    }`}
+                  >
+                    {isFeaturedPreviewing ? (
+                      <X className="h-3.5 w-3.5" />
+                    ) : (
+                      <Play className="h-3.5 w-3.5 fill-white" />
+                    )}
+                    <span>{isFeaturedPreviewing ? "Stop preview" : "Play preview"}</span>
+                  </button>
                 )}
               </div>
 
@@ -123,26 +150,31 @@ export const EliteCollection: React.FC = () => {
         {/* Secondary Collection Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           {secondary.map((property: Property) => {
-            const isHovered = hoveredProperty === property.id;
+            const isPreviewing = activePreviewId === property.id;
             return (
               <motion.div
                 key={property.id}
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, margin: "-100px" }}
-                onMouseEnter={() => setHoveredProperty(property.id)}
-                onMouseLeave={() => setHoveredProperty(null)}
+                onMouseEnter={() => {
+                  if (!isTouchDevice) setActivePreviewId(property.id);
+                }}
+                onMouseLeave={() => {
+                  if (!isTouchDevice) setActivePreviewId(null);
+                }}
                 className="group relative rounded-3xl border border-white/10 bg-neutral-900/40 overflow-hidden backdrop-blur-md transition-all duration-300 hover:border-[#C6A84B]/50 will-change-transform"
               >
                 <div className="relative h-72 w-full overflow-hidden bg-neutral-950">
-                  {isHovered && property.videoUrl ? (
+                  {isPreviewing && property.videoUrl ? (
                     <video
                       src={property.videoUrl}
                       autoPlay
                       loop
                       muted
                       playsInline
-                      preload="auto"
+                      controls={isTouchDevice}
+                      preload="none"
                       className="h-full w-full object-cover scale-105 transition-transform duration-500 will-change-transform"
                     />
                   ) : (
@@ -158,6 +190,26 @@ export const EliteCollection: React.FC = () => {
                     <div className="absolute top-4 left-4 rounded-full bg-[#C6A84B] px-3.5 py-1 text-xs font-bold text-black uppercase tracking-wider">
                       {property.badge}
                     </div>
+                  )}
+                  {property.videoUrl && (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setActivePreviewId(isPreviewing ? null : property.id)
+                      }
+                      aria-pressed={isPreviewing}
+                      aria-label={`${isPreviewing ? "Stop" : "Play"} video preview for ${property.title}`}
+                      className={`absolute right-4 top-4 z-20 inline-flex min-h-11 items-center gap-2 rounded-full border border-white/25 bg-black/70 px-4 text-xs font-semibold text-white backdrop-blur-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#C6A84B] ${
+                        isTouchDevice ? "" : "md:opacity-0 md:focus-visible:opacity-100"
+                      }`}
+                    >
+                      {isPreviewing ? (
+                        <X className="h-3.5 w-3.5" />
+                      ) : (
+                        <Play className="h-3.5 w-3.5 fill-white" />
+                      )}
+                      <span>{isPreviewing ? "Stop preview" : "Play preview"}</span>
+                    </button>
                   )}
                 </div>
 

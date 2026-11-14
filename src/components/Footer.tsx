@@ -100,7 +100,7 @@ export const Footer: React.FC = () => {
   ].filter((s) => s.href);
 
   return (
-    <footer className="relative z-20 border-t border-white/10 bg-[#050505] pt-20 pb-10 text-neutral-400">
+    <footer className="relative z-20 overflow-x-clip border-t border-white/10 bg-[#050505] pt-20 pb-10 text-neutral-400">
       {/* Soft gold glow */}
       <div className="pointer-events-none absolute -top-32 left-1/2 h-64 w-[480px] -translate-x-1/2 rounded-full bg-[#C6A84B]/5 blur-[100px]" />
 

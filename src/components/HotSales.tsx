@@ -1,10 +1,11 @@
 import React, { useState } from "react";
 import { motion } from "framer-motion";
 import { JANZEM_DATA, type Property } from "../data/landingData";
-import { Bed, Bath, Maximize2, Tag, ArrowUpRight, Play } from "lucide-react";
+import { Bed, Bath, Maximize2, Tag, ArrowUpRight, Play, X } from "lucide-react";
 
 export const HotSales: React.FC = () => {
-  const [hoveredProperty, setHoveredProperty] = useState<string | null>(null);
+  const [activePreviewId, setActivePreviewId] = useState<string | null>(null);
+  const isTouchDevice = window.matchMedia("(hover: none), (pointer: coarse)").matches;
 
   return (
     <section className="relative bg-[#050505] py-24 px-6 md:px-16 overflow-hidden">
@@ -28,7 +29,7 @@ export const HotSales: React.FC = () => {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           {JANZEM_DATA.hotSales.map((property: Property) => {
-            const isHovered = hoveredProperty === property.id;
+            const isPreviewing = activePreviewId === property.id;
             return (
               <motion.div
                 key={property.id}
@@ -36,20 +37,24 @@ export const HotSales: React.FC = () => {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, margin: "-100px" }}
                 transition={{ duration: 0.5 }}
-                onMouseEnter={() => setHoveredProperty(property.id)}
-                onMouseLeave={() => setHoveredProperty(null)}
+                onMouseEnter={() => {
+                  if (!isTouchDevice) setActivePreviewId(property.id);
+                }}
+                onMouseLeave={() => {
+                  if (!isTouchDevice) setActivePreviewId(null);
+                }}
                 className="group relative rounded-3xl border border-white/10 bg-neutral-900/40 overflow-hidden backdrop-blur-md transition-all duration-300 hover:border-[#D91B24]/60 hover:shadow-2xl hover:shadow-[#D91B24]/10 will-change-transform"
               >
                 <div className="relative h-72 sm:h-80 w-full overflow-hidden bg-neutral-950">
-                  {/* Dynamic Video Mounting — Only downloads bytes on actual hover */}
-                  {isHovered && property.videoUrl ? (
+                  {isPreviewing && property.videoUrl ? (
                     <video
                       src={property.videoUrl}
                       autoPlay
                       loop
                       muted
                       playsInline
-                      preload="auto"
+                      controls={isTouchDevice}
+                      preload="none"
                       className="h-full w-full object-cover scale-105 transition-transform duration-500 will-change-transform"
                     />
                   ) : (
@@ -69,7 +74,28 @@ export const HotSales: React.FC = () => {
                     </div>
                   )}
 
-                  {property.videoUrl && !isHovered && (
+                  {property.videoUrl && (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setActivePreviewId(isPreviewing ? null : property.id)
+                      }
+                      aria-pressed={isPreviewing}
+                      aria-label={`${isPreviewing ? "Stop" : "Play"} video preview for ${property.title}`}
+                      className={`absolute right-4 top-4 z-20 inline-flex min-h-11 items-center gap-2 rounded-full border border-white/25 bg-black/70 px-4 text-xs font-semibold text-white backdrop-blur-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#C6A84B] ${
+                        isTouchDevice ? "" : "md:opacity-0 md:focus-visible:opacity-100"
+                      }`}
+                    >
+                      {isPreviewing ? (
+                        <X className="h-3.5 w-3.5" />
+                      ) : (
+                        <Play className="h-3.5 w-3.5 fill-white" />
+                      )}
+                      <span>{isPreviewing ? "Stop preview" : "Play preview"}</span>
+                    </button>
+                  )}
+
+                  {property.videoUrl && !isPreviewing && !isTouchDevice && (
                     <div className="absolute bottom-4 right-4 flex items-center gap-1.5 rounded-full bg-black/60 px-3 py-1 text-xs text-white backdrop-blur-md border border-white/20">
                       <Play className="h-3 w-3 fill-white" />
                       <span>Hover for Video</span>

@@ -1,5 +1,11 @@
 import React, { useRef, useEffect, useState, useCallback } from "react";
-import { useScroll, useTransform, motion, AnimatePresence } from "framer-motion";
+import {
+  useScroll,
+  useTransform,
+  motion,
+  AnimatePresence,
+  useReducedMotion,
+} from "framer-motion";
 import { JANZEM_DATA } from "../data/landingData";
 import { MapPin } from "lucide-react";
 import { HeroOverlay } from "./HeroOverlay";
@@ -8,12 +14,14 @@ export const ScrollVideoEngine: React.FC = () => {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
-  const [images, setImages] = useState<HTMLImageElement[]>([]);
+  const imagesRef = useRef<HTMLImageElement[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [activeAnnotation, setActiveAnnotation] = useState<number | null>(null);
-  const [shouldLoad, setShouldLoad] = useState(false);
+  const [loadedFrame, setLoadedFrame] = useState(-1);
 
   const { totalFrames, desktopPath, mobilePath, annotations } = JANZEM_DATA.heroSequence;
+  const prefersReducedMotion = useReducedMotion() ?? false;
+  const initialFrameIndex = prefersReducedMotion ? totalFrames - 1 : 0;
 
   const { scrollYProgress } = useScroll({
     target: containerRef,
@@ -22,60 +30,91 @@ export const ScrollVideoEngine: React.FC = () => {
 
   const rawFrameIndex = useTransform(scrollYProgress, [0, 1], [0, totalFrames - 1]);
 
-  useEffect(() => {
-    setShouldLoad(true);
+  const requestFrames = useCallback((frameIndex: number) => {
+    const start = Math.max(0, Math.floor(frameIndex));
+    const images = imagesRef.current;
+    const end = Math.min(images.length, start + 6);
+
+    for (let i = start; i < end; i++) {
+      const img = images[i];
+      if (img && !img.src) {
+        img.src = img.dataset.src ?? "";
+      }
+    }
   }, []);
 
-  // Preload frame images
+  // Create image elements up front, but only request frames as they are needed.
   useEffect(() => {
-    if (!shouldLoad) return;
-    
     let isMounted = true;
     const isMobile = window.innerWidth < 768;
     const pathTemplate = isMobile ? mobilePath : desktopPath;
     const loadedImgs: HTMLImageElement[] = [];
-    let count = 0;
 
     for (let i = 1; i <= totalFrames; i++) {
       const img = new Image();
       const paddedIndex = String(i).padStart(4, "0");
-      img.src = pathTemplate.replace("%04d", paddedIndex);
+      img.decoding = "async";
+      img.dataset.src = pathTemplate.replace("%04d", paddedIndex);
 
-      const onImageLoad = () => {
+      const onImageSettled = () => {
         if (!isMounted) return;
-        count++;
-        if (count >= Math.floor(totalFrames * 0.3)) {
+        if (i - 1 === initialFrameIndex) {
           setIsLoading(false);
+        }
+        const currentFrame = prefersReducedMotion
+          ? totalFrames - 1
+          : Math.floor(rawFrameIndex.get());
+        if (currentFrame === i - 1) {
+          setLoadedFrame(i - 1);
         }
       };
 
-      img.onload = onImageLoad;
-      img.onerror = onImageLoad;
+      img.onload = onImageSettled;
+      img.onerror = onImageSettled;
 
       loadedImgs.push(img);
     }
 
-    setImages(loadedImgs);
+    imagesRef.current = loadedImgs;
+    requestFrames(initialFrameIndex);
 
     return () => {
       isMounted = false;
       loadedImgs.forEach((img) => {
         img.src = "";
       });
+      imagesRef.current = [];
     };
-  }, [totalFrames, desktopPath, mobilePath, shouldLoad]);
+  }, [
+    totalFrames,
+    desktopPath,
+    mobilePath,
+    rawFrameIndex,
+    requestFrames,
+    initialFrameIndex,
+    prefersReducedMotion,
+  ]);
 
   // Draw frame on canvas
   const renderFrame = useCallback(
     (index: number) => {
       const canvas = canvasRef.current;
+      const images = imagesRef.current;
       if (!canvas || images.length === 0) return;
       const ctx = canvas.getContext("2d", { alpha: false });
       if (!ctx) return;
 
       const clampedIndex = Math.min(Math.max(0, Math.floor(index)), images.length - 1);
-      const img = images[clampedIndex];
-      if (!img || !img.complete || img.naturalWidth === 0) return;
+      let img = images[clampedIndex];
+      if (!img?.complete || img.naturalWidth === 0) {
+        for (let i = clampedIndex - 1; i >= 0; i--) {
+          if (images[i]?.complete && images[i].naturalWidth > 0) {
+            img = images[i];
+            break;
+          }
+        }
+      }
+      if (!img?.complete || img.naturalWidth === 0) return;
 
       const dpr = window.devicePixelRatio || 1;
       const rect = canvas.getBoundingClientRect();
@@ -113,14 +152,20 @@ export const ScrollVideoEngine: React.FC = () => {
       ctx.drawImage(img, offsetX, offsetY, drawWidth, drawHeight);
       ctx.restore();
     },
-    [images]
+    []
   );
+
+  useEffect(() => {
+    renderFrame(prefersReducedMotion ? totalFrames - 1 : rawFrameIndex.get());
+  }, [loadedFrame, rawFrameIndex, renderFrame, prefersReducedMotion, totalFrames]);
 
   // Sync scroll to frame via requestAnimationFrame
   useEffect(() => {
     let animationFrameId: number;
 
     const unsubscribe = rawFrameIndex.on("change", (latest: number) => {
+      if (prefersReducedMotion) return;
+      requestFrames(latest);
       animationFrameId = requestAnimationFrame(() => {
         const idx = Math.floor(latest);
         renderFrame(idx);
@@ -136,22 +181,24 @@ export const ScrollVideoEngine: React.FC = () => {
       unsubscribe();
       cancelAnimationFrame(animationFrameId);
     };
-  }, [rawFrameIndex, renderFrame, annotations]);
+  }, [rawFrameIndex, renderFrame, requestFrames, annotations, prefersReducedMotion]);
 
   useEffect(() => {
     const handleResize = () =>
-      requestAnimationFrame(() => renderFrame(rawFrameIndex.get()));
+      requestAnimationFrame(() =>
+        renderFrame(prefersReducedMotion ? totalFrames - 1 : rawFrameIndex.get())
+      );
     window.addEventListener("resize", handleResize, { passive: true });
     return () => window.removeEventListener("resize", handleResize);
-  }, [rawFrameIndex, renderFrame]);
+  }, [rawFrameIndex, renderFrame, prefersReducedMotion, totalFrames]);
 
   const activeAnnotationData = annotations.find(
     (a) => a.frameIndex === activeAnnotation
   );
 
   return (
-    <div ref={containerRef} className="relative h-[400vh] bg-[#050505]">
-      <div className="sticky top-0 h-screen w-full overflow-hidden bg-[#050505]">
+    <div ref={containerRef} className="scroll-sequence hero-scroll-section relative bg-[#050505]">
+      <div className="sticky top-0 h-screen supports-[height:100svh]:h-[100svh] w-full overflow-hidden bg-[#050505]">
         {/* Loading Overlay */}
         {isLoading && (
           <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-[#050505] text-white">

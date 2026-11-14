@@ -57,3 +57,53 @@ canvas {
   touch-action: none;
   pointer-events: none;
 }
+@layer utilities {
+  .hero-scroll-section {
+    height: 240vh;
+    height: 240svh;
+  }
+
+  .blueprint-scroll-section {
+    height: 180vh;
+    height: 180svh;
+  }
+
+  .walkthrough-scroll-section {
+    height: 220vh;
+    height: 220svh;
+  }
+
+  .cta-scroll-section {
+    height: 200vh;
+    height: 200svh;
+  }
+}
+
+@media (min-width: 768px) {
+  .hero-scroll-section {
+    height: 400vh;
+    height: 400svh;
+  }
+
+  .blueprint-scroll-section {
+    height: 300vh;
+    height: 300svh;
+  }
+
+  .walkthrough-scroll-section {
+    height: 350vh;
+    height: 350svh;
+  }
+
+  .cta-scroll-section {
+    height: 320vh;
+    height: 320svh;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scroll-sequence {
+    height: 100vh;
+    height: 100svh;
+  }
+}

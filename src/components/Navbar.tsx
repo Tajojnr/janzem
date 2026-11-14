@@ -132,7 +132,7 @@ export const Navbar: React.FC = () => {
 
         {/* Main bar */}
         <div
-          className={`mx-auto grid max-w-7xl grid-cols-[auto_1fr_auto] items-center gap-6 px-6 transition-[padding] duration-500 md:px-12 ${
+          className={`mx-auto grid max-w-7xl grid-cols-[auto_1fr_auto] items-center gap-2 px-4 transition-[padding] duration-500 sm:gap-6 sm:px-6 md:px-12 ${
             scrolled ? "py-2.5" : "py-4"
           }`}
         >
@@ -205,12 +205,12 @@ export const Navbar: React.FC = () => {
           </div>
 
           {/* Mobile: compact booking button and menu toggle */}
-          <div className="col-start-3 flex items-center gap-3 lg:hidden">
+          <div className="col-start-3 flex items-center gap-2 sm:gap-3 lg:hidden">
             <a
               href={bookingHref}
               target="_blank"
               rel="noreferrer"
-              className="rounded-full bg-gradient-to-b from-[#E5C365] to-[#B8963F] px-4 py-2 text-xs font-bold text-[#14110A] active:scale-[0.97]"
+              className="rounded-full bg-gradient-to-b from-[#E5C365] to-[#B8963F] px-3 py-2 text-xs font-bold text-[#14110A] active:scale-[0.97] sm:px-4"
             >
               Book visit
             </a>

@@ -1,10 +1,57 @@
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { JANZEM_DATA, type VerificationCert } from "../data/landingData";
 import { ShieldCheck, Award, CheckCircle2, Eye, X, ExternalLink } from "lucide-react";
 
 export const TrustBar: React.FC = () => {
   const [selectedCert, setSelectedCert] = useState<VerificationCert & { image: string } | null>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    if (!selectedCert) return;
+
+    const previousFocus =
+      document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    closeButtonRef.current?.focus();
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setSelectedCert(null);
+        return;
+      }
+
+      if (event.key !== "Tab") return;
+      const dialog = dialogRef.current;
+      if (!dialog) return;
+
+      const focusableElements = dialog.querySelectorAll<HTMLElement>(
+        'button:not([disabled]), a[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+      );
+      const firstElement = focusableElements[0];
+      const lastElement = focusableElements[focusableElements.length - 1];
+
+      if (!firstElement || !lastElement) {
+        event.preventDefault();
+        dialog.focus();
+      } else if (event.shiftKey && document.activeElement === firstElement) {
+        event.preventDefault();
+        lastElement.focus();
+      } else if (!event.shiftKey && document.activeElement === lastElement) {
+        event.preventDefault();
+        firstElement.focus();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      document.body.style.overflow = previousOverflow;
+      previousFocus?.focus();
+    };
+  }, [selectedCert]);
 
   const certImages: Record<string, string> = {
     cac: "/assets/images/certificates/cac-certificate.webp",
@@ -67,9 +114,10 @@ export const TrustBar: React.FC = () => {
 
                   {/* View Document Action */}
                   <button
+                    type="button"
                     onClick={() => setSelectedCert({ ...cert, image: imagePath })}
                     data-cursor="INSPECT"
-                    className="mt-5 flex items-center justify-between border-t border-white/10 pt-3 text-xs font-semibold text-white group-hover:text-[#C6A84B] transition-colors"
+                    className="mt-5 flex items-center justify-between border-t border-white/10 pt-3 text-xs font-semibold text-white group-hover:text-[#C6A84B] transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#C6A84B]"
                   >
                     <span className="flex items-center gap-1.5">
                       <Eye className="w-3.5 h-3.5 text-[#C6A84B]" />
@@ -95,10 +143,15 @@ export const TrustBar: React.FC = () => {
             className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-4 md:p-10 backdrop-blur-2xl"
           >
             <motion.div
+              ref={dialogRef}
               initial={{ scale: 0.9, opacity: 0, y: 20 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.9, opacity: 0, y: 20 }}
               onClick={(e) => e.stopPropagation()}
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="certificate-dialog-title"
+              tabIndex={-1}
               className="relative max-h-[90vh] w-full max-w-3xl overflow-hidden rounded-3xl border border-[#C6A84B]/40 bg-neutral-950 p-6 md:p-8 shadow-2xl"
             >
               {/* Modal Header */}
@@ -107,13 +160,16 @@ export const TrustBar: React.FC = () => {
                   <span className="text-xs font-mono font-bold text-[#C6A84B] uppercase tracking-wider">
                     Official Verification Document
                   </span>
-                  <h3 className="font-serif text-xl font-bold text-white">
+                  <h3 id="certificate-dialog-title" className="font-serif text-xl font-bold text-white">
                     {selectedCert.agency}
                   </h3>
                 </div>
                 <button
+                  ref={closeButtonRef}
+                  type="button"
                   onClick={() => setSelectedCert(null)}
-                  className="flex h-9 w-9 items-center justify-center rounded-full border border-white/20 bg-white/5 text-white transition-colors hover:bg-white/10"
+                  aria-label="Close certificate dialog"
+                  className="flex h-9 w-9 items-center justify-center rounded-full border border-white/20 bg-white/5 text-white transition-colors hover:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#C6A84B]"
                 >
                   <X className="h-5 w-5" />
                 </button>
@@ -126,8 +182,7 @@ export const TrustBar: React.FC = () => {
                   alt={selectedCert.title}
                   className="max-h-[55vh] w-auto object-contain rounded-lg shadow-lg"
                   onError={(e) => {
-                    // Fallback placeholder if image not uploaded yet
-                    (e.target as HTMLElement).ariaLabel = "Certificate Image Pending Upload";
+                    e.currentTarget.alt = "Certificate image could not be loaded";
                   }}
                 />
               </div>

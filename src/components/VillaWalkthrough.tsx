@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState, useCallback } from "react";
-import { useScroll, useTransform, motion } from "framer-motion";
+import { useScroll, useTransform, motion, useReducedMotion } from "framer-motion";
 import { JANZEM_DATA } from "../data/landingData";
 import { Eye, Compass, ShieldCheck } from "lucide-react";
 
@@ -7,11 +7,14 @@ export const VillaWalkthrough: React.FC = () => {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
-  const [images, setImages] = useState<HTMLImageElement[]>([]);
+  const imagesRef = useRef<HTMLImageElement[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [shouldLoad, setShouldLoad] = useState(false);
+  const [loadedFrame, setLoadedFrame] = useState(-1);
 
   const { totalFrames, desktopPath, mobilePath } = JANZEM_DATA.walkthroughSequence;
+  const prefersReducedMotion = useReducedMotion() ?? false;
+  const initialFrameIndex = prefersReducedMotion ? totalFrames - 1 : 0;
 
   const { scrollYProgress } = useScroll({
     target: containerRef,
@@ -19,6 +22,19 @@ export const VillaWalkthrough: React.FC = () => {
   });
 
   const rawFrameIndex = useTransform(scrollYProgress, [0, 1], [0, totalFrames - 1]);
+
+  const requestFrames = useCallback((frameIndex: number) => {
+    const start = Math.max(0, Math.floor(frameIndex));
+    const images = imagesRef.current;
+    const end = Math.min(images.length, start + 6);
+
+    for (let i = start; i < end; i++) {
+      const img = images[i];
+      if (img && !img.src) {
+        img.src = img.dataset.src ?? "";
+      }
+    }
+  }, []);
 
   // LAZY LOAD TRIGGER: Only start downloading frames when user is 400px away
   useEffect(() => {
@@ -47,52 +63,73 @@ export const VillaWalkthrough: React.FC = () => {
     const isMobile = window.innerWidth < 768;
     const pathTemplate = isMobile ? mobilePath : desktopPath;
     const loadedImgs: HTMLImageElement[] = [];
-    let count = 0;
 
     for (let i = 1; i <= totalFrames; i++) {
       const img = new Image();
       const paddedIndex = String(i).padStart(4, "0");
-      img.src = pathTemplate.replace("%04d", paddedIndex);
+      img.decoding = "async";
+      img.dataset.src = pathTemplate.replace("%04d", paddedIndex);
 
-      const onImageLoad = () => {
+      const onImageSettled = () => {
         if (!isMounted) return;
-        count++;
-        if (count >= Math.floor(totalFrames * 0.3)) {
+        if (i - 1 === initialFrameIndex) {
           setIsLoading(false);
+        }
+        const currentFrame = prefersReducedMotion
+          ? totalFrames - 1
+          : Math.floor(rawFrameIndex.get());
+        if (currentFrame === i - 1) {
+          setLoadedFrame(i - 1);
         }
       };
 
-      img.onload = onImageLoad;
-      img.onerror = () => {
-        const fallbackIndex = String(i - 1).padStart(4, "0");
-        img.src = pathTemplate.replace("%04d", fallbackIndex);
-        img.onload = onImageLoad;
-      };
+      img.onload = onImageSettled;
+      img.onerror = onImageSettled;
 
       loadedImgs.push(img);
     }
 
-    setImages(loadedImgs);
+    imagesRef.current = loadedImgs;
+    requestFrames(initialFrameIndex);
 
     return () => {
       isMounted = false;
       loadedImgs.forEach((img) => {
         img.src = "";
       });
+      imagesRef.current = [];
     };
-  }, [totalFrames, desktopPath, mobilePath, shouldLoad]);
+  }, [
+    totalFrames,
+    desktopPath,
+    mobilePath,
+    shouldLoad,
+    rawFrameIndex,
+    requestFrames,
+    initialFrameIndex,
+    prefersReducedMotion,
+  ]);
 
   // Render frame on GPU canvas
   const renderFrame = useCallback(
     (index: number) => {
       const canvas = canvasRef.current;
+      const images = imagesRef.current;
       if (!canvas || images.length === 0) return;
       const ctx = canvas.getContext("2d", { alpha: false });
       if (!ctx) return;
 
       const clampedIndex = Math.min(Math.max(0, Math.floor(index)), images.length - 1);
-      const img = images[clampedIndex];
-      if (!img || !img.complete || img.naturalWidth === 0) return;
+      let img = images[clampedIndex];
+      if (!img?.complete || img.naturalWidth === 0) {
+        for (let i = clampedIndex - 1; i >= 0; i--) {
+          if (images[i]?.complete && images[i].naturalWidth > 0) {
+            img = images[i];
+            break;
+          }
+        }
+      }
+      if (!img?.complete || img.naturalWidth === 0) return;
 
       const dpr = window.devicePixelRatio || 1;
       const rect = canvas.getBoundingClientRect();
@@ -130,12 +167,14 @@ export const VillaWalkthrough: React.FC = () => {
       ctx.drawImage(img, offsetX, offsetY, drawWidth, drawHeight);
       ctx.restore();
     },
-    [images]
+    []
   );
 
   useEffect(() => {
     let animationFrameId: number;
     const unsubscribe = rawFrameIndex.on("change", (latest: number) => {
+      if (prefersReducedMotion) return;
+      if (shouldLoad) requestFrames(latest);
       animationFrameId = requestAnimationFrame(() => {
         renderFrame(latest);
       });
@@ -145,24 +184,24 @@ export const VillaWalkthrough: React.FC = () => {
       unsubscribe();
       cancelAnimationFrame(animationFrameId);
     };
-  }, [rawFrameIndex, renderFrame]);
+  }, [rawFrameIndex, renderFrame, requestFrames, shouldLoad, prefersReducedMotion]);
 
   useEffect(() => {
-    if (images.length > 0) {
-      renderFrame(rawFrameIndex.get());
-    }
-  }, [images, renderFrame, rawFrameIndex]);
+    renderFrame(prefersReducedMotion ? totalFrames - 1 : rawFrameIndex.get());
+  }, [loadedFrame, renderFrame, rawFrameIndex, prefersReducedMotion, totalFrames]);
 
   useEffect(() => {
     const handleResize = () =>
-      requestAnimationFrame(() => renderFrame(rawFrameIndex.get()));
+      requestAnimationFrame(() =>
+        renderFrame(prefersReducedMotion ? totalFrames - 1 : rawFrameIndex.get())
+      );
     window.addEventListener("resize", handleResize, { passive: true });
     return () => window.removeEventListener("resize", handleResize);
-  }, [rawFrameIndex, renderFrame]);
+  }, [rawFrameIndex, renderFrame, prefersReducedMotion, totalFrames]);
 
   return (
-    <div ref={containerRef} className="relative h-[350vh] bg-[#050505]">
-      <div className="sticky top-0 h-screen w-full overflow-hidden bg-[#050505]">
+    <div ref={containerRef} className="scroll-sequence walkthrough-scroll-section relative bg-[#050505]">
+      <div className="sticky top-0 h-screen supports-[height:100svh]:h-[100svh] w-full overflow-hidden bg-[#050505]">
         {/* Loading Overlay */}
         {isLoading && (
           <div className="absolute inset-0 z-40 flex flex-col items-center justify-center bg-[#050505] text-white">
